@@ -25,17 +25,20 @@ public Paquete(String id, String destinatario, String direccion) {
     this.peso = 0;
     this.estado = EstadoPaquete.RECIBIDO;
 }
-public void avanzarEstado() {
+public boolean avanzarEstado() {
     if (this.estado == EstadoPaquete.RECIBIDO) {
         this.estado = EstadoPaquete.EN_PREPARACION;
+        return true;
     } else if (this.estado == EstadoPaquete.EN_PREPARACION) {
         this.estado = EstadoPaquete.EN_DISTRIBUCION;
+        return true;
     } else if (this.estado == EstadoPaquete.EN_DISTRIBUCION) {
         this.estado = EstadoPaquete.ENTREGADO;
+        return true;
     } else {
-        System.out.println("El paquete " + this.id + " ya fue entregado.");
+        return false;
     }
-} 
+}
 public EstadoPaquete getEstado() {
     return this.estado;
 }

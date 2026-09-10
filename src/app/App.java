@@ -6,6 +6,9 @@ import modelo.EnvioEstandar;
 import modelo.EnvioExpress;
 import modelo.EnvioInternacional;
 import java.util.ArrayList;
+import modelo.Cliente;
+import modelo.Sucursal;
+import modelo.Sistema;
 
 public class App {
     public static void main(String[] args) {
@@ -21,6 +24,33 @@ public class App {
 
         for (Envio envio : envios) {
             System.out.println(envio);
+        }
+
+        Cliente cliente1 = new Cliente("CLI001", "Daniela", "Albera", "daniela@mail.com");
+        Sucursal sucursalViedma = new Sucursal("SUC001", "Viedma");
+        Sucursal sucursalBahiaBlanca = new Sucursal("SUC002", "Bahia Blanca");
+        Sistema sistema = new Sistema();
+
+        Envio envioDeCliente = new EnvioEstandar("ENV004", new Paquete[]{
+            new Paquete("PKG004", 1.5, "Daniela Albera", "Av. Roca 506")
+        });
+
+        cliente1.registrarEnvio(envioDeCliente);
+        sistema.registrarEnvio(envioDeCliente);
+
+        sucursalViedma.recibirEnvio(envioDeCliente);
+        sucursalViedma.despacharEnvio(envioDeCliente);
+        sucursalBahiaBlanca.recibirEnvio(envioDeCliente);
+        sucursalBahiaBlanca.despacharEnvio(envioDeCliente);
+        sucursalViedma.recibirEnvio(envioDeCliente);
+
+        System.out.println(envioDeCliente.mostrarHistorial());
+        System.out.println("Sucursales recorridas: " + envioDeCliente.sucursalesRecorridas());
+        System.out.println("Ultimo movimiento: " + envioDeCliente.ultimoMovimiento());
+
+        Envio envioInexistente = sistema.buscarEnvio("ENV999");
+        if (envioInexistente == null) {
+            System.out.println("No se encontro el envio buscado.");
         }
     }
 }
