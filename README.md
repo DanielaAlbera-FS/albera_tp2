@@ -44,7 +44,7 @@ El programa muestra un recorrido completo de un envío, las consultas del histor
 ## Mejoras posibles a futuro
 
 - **Excepciones propias del dominio.** Hoy uso las excepciones estándar de Java (`IllegalStateException`, `IllegalArgumentException`, `NoSuchElementException`). Se podrían crear excepciones propias, como `EnvioNoEncontradoException`, para que `App` distinga mejor cada tipo de error.
--- **Reutilizar el cálculo del costo.** Los tres tipos de envío repiten el mismo recorrido de paquetes y solo cambia el recargo. Se podría dejar el cálculo base en `Envio` y que cada subclase indique solamente su recargo.
+-**Reutilizar el cálculo del costo.** Los tres tipos de envío repiten el mismo recorrido de paquetes y solo cambia el recargo. Se podría dejar el cálculo base en `Envio` y que cada subclase indique solamente su recargo.
 - **Validar los paquetes al crear el envío.** Varios métodos de `Envio` revisan que cada paquete no sea `null`. Se podría validar una sola vez en el constructor, o usar una lista en lugar de un arreglo.
 - **Estados más expresivos.** Para distinguir mejor "en una sucursal" de "en viaje" se podrían agregar estados propios al enum `EstadoPaquete`.
 - **Evitar envíos duplicados.** `Sistema` podría rechazar el registro de un envío con un id que ya existe.
