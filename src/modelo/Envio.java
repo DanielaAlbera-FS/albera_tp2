@@ -1,6 +1,5 @@
 package modelo;
 
-import enums.EstadoPaquete;
 import enums.TipoMovimiento;
 import java.util.ArrayList;
 
@@ -27,90 +26,113 @@ public abstract class Envio {
         return this.id;
     }
 
-    public boolean iniciar() {
-        boolean exito = true;
+    // ---------- Acciones del envio ----------
+
+    public void recibir(Sucursal sucursal) { // ahora es void: si falla, lanza excepcion
+        if (estaFinalizado()) {
+            throw new IllegalStateException("El envio " + this.id + " ya fue entregado: no puede recibirse.");
+        }
+        if (estaEnSucursal()) {
+            throw new IllegalStateException("El envio " + this.id + " ya esta en una sucursal: debe despacharse antes de recibirse de nuevo.");
+        }
         for (Paquete paquete : paquetes) {
             if (paquete != null) {
-                boolean ok = paquete.avanzarEstado();
-                if (!ok) {
-                    exito = false;
-                }
+                paquete.recibir(); // le dice al paquete que hacer, no le cambia el estado
             }
         }
-        return exito;
+        registrarMovimiento(sucursal, TipoMovimiento.RECIBIDO);
     }
 
-    public boolean recibir(Sucursal sucursal) {
-        boolean exitoPaquetes = true;
+    public void despachar(Sucursal sucursal) {
+        if (estaFinalizado()) {
+            throw new IllegalStateException("El envio " + this.id + " ya fue entregado: no puede despacharse.");
+        }
+        if (!estaEnSucursal()) {
+            throw new IllegalStateException("El envio " + this.id + " no esta en una sucursal: debe recibirse antes de despacharse.");
+        }
+        if (!estaEn(sucursal)) {
+            throw new IllegalStateException("Movimiento incoherente: el envio " + this.id + " no esta en " + sucursal + ".");
+        }
         for (Paquete paquete : paquetes) {
             if (paquete != null) {
-                boolean ok = paquete.avanzarEstado();
-                if (!ok) {
-                    exitoPaquetes = false;
-                }
+                paquete.despachar();
             }
         }
-        TipoMovimiento tipo = todosEntregados() ? TipoMovimiento.ENTREGADO : TipoMovimiento.RECIBIDO;
-        boolean exitoMovimiento = registrarMovimiento(sucursal, tipo);
-        return exitoPaquetes && exitoMovimiento;
+        registrarMovimiento(sucursal, TipoMovimiento.DESPACHADO);
     }
 
-    public boolean despachar(Sucursal sucursal) {
-        return registrarMovimiento(sucursal, TipoMovimiento.DESPACHADO);
+    public void entregar(Sucursal sucursal) { // accion nueva: antes la entrega pasaba sola dentro de recibir
+        if (!estaEnViaje()) {
+            throw new IllegalStateException("El envio " + this.id + " no puede entregarse porque no fue despachado.");
+        }
+        for (Paquete paquete : paquetes) {
+            if (paquete != null) {
+                paquete.entregar();
+            }
+        }
+        registrarMovimiento(sucursal, TipoMovimiento.ENTREGADO);
+    }
+
+    // ---------- Consultas: devuelven el dato, no un texto ----------
+
+    public ArrayList<Movimiento> obtenerHistorial() {
+        return new ArrayList<>(this.historialDeMovimientos); // copia: nadie de afuera modifica la lista original
+    }
+
+    public ArrayList<Sucursal> obtenerSucursalesRecorridas() {
+        ArrayList<Sucursal> sucursales = new ArrayList<>();
+        for (Movimiento movimiento : historialDeMovimientos) {
+            Sucursal sucursal = movimiento.getSucursal();
+            if (!sucursales.contains(sucursal)) { // evita repetir la misma sucursal
+                sucursales.add(sucursal);
+            }
+        }
+        return sucursales;
+    }
+
+    public Movimiento obtenerUltimoMovimiento() {
+        if (historialDeMovimientos.isEmpty()) {
+            throw new IllegalStateException("El envio " + this.id + " todavia no tiene movimientos.");
+        }
+        return historialDeMovimientos.get(historialDeMovimientos.size() - 1);
+    }
+
+    // ---------- Reglas de negocio (privadas y reutilizables) ----------
+
+    private boolean estaFinalizado() {
+        return todosEntregados();
+    }
+
+    private boolean estaEnSucursal() {
+        return ultimoMovimientoEs(TipoMovimiento.RECIBIDO);
+    }
+
+    private boolean estaEnViaje() {
+        return ultimoMovimientoEs(TipoMovimiento.DESPACHADO);
+    }
+
+    private boolean estaEn(Sucursal sucursal) {
+        return obtenerUltimoMovimiento().getSucursal() == sucursal;
+    }
+
+    private boolean ultimoMovimientoEs(TipoMovimiento tipo) {
+        if (historialDeMovimientos.isEmpty()) {
+            return false;
+        }
+        return obtenerUltimoMovimiento().getTipoMovimiento() == tipo;
     }
 
     private boolean todosEntregados() {
         for (Paquete paquete : paquetes) {
-            if (paquete != null && paquete.getEstado() != EstadoPaquete.ENTREGADO) {
+            if (paquete != null && !paquete.estaEntregado()) { // le pregunta al paquete, ya no compara su estado
                 return false;
             }
         }
         return true;
     }
 
-    private boolean registrarMovimiento(Sucursal sucursal, TipoMovimiento tipo) {
-        if (!transicionValida(tipo)) {
-            return false;
-        }
+    private void registrarMovimiento(Sucursal sucursal, TipoMovimiento tipo) { // ahora solo registra
         this.historialDeMovimientos.add(new Movimiento(sucursal, tipo));
-        return true;
-    }
-
-    private boolean transicionValida(TipoMovimiento nuevoTipo) {
-        if (historialDeMovimientos.isEmpty()) {
-            return nuevoTipo == TipoMovimiento.RECIBIDO;
-        }
-        TipoMovimiento ultimo = historialDeMovimientos.get(historialDeMovimientos.size() - 1).getTipoMovimiento();
-        if (ultimo == TipoMovimiento.RECIBIDO) {
-            return nuevoTipo == TipoMovimiento.DESPACHADO;
-        }
-        if (ultimo == TipoMovimiento.DESPACHADO) {
-            return nuevoTipo == TipoMovimiento.RECIBIDO || nuevoTipo == TipoMovimiento.ENTREGADO;
-        }
-        return false;
-    }
-
-    public String mostrarHistorial() {
-        StringBuilder sb = new StringBuilder();
-        for (Movimiento movimiento : historialDeMovimientos) {
-            sb.append(movimiento.toString()).append("\n");
-        }
-        return sb.toString();
-    }
-
-    public String sucursalesRecorridas() {
-        StringBuilder sb = new StringBuilder();
-        for (Movimiento movimiento : historialDeMovimientos) {
-            sb.append(movimiento.getSucursal().toString()).append(" ");
-        }
-        return sb.toString();
-    }
-
-    public String ultimoMovimiento() {
-        if (historialDeMovimientos.isEmpty()) {
-            return "Sin movimientos registrados.";
-        }
-        return historialDeMovimientos.get(historialDeMovimientos.size() - 1).toString();
     }
 
     public String toString() {

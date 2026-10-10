@@ -1,6 +1,7 @@
 package modelo;
 
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 
 public class Sistema {
 
@@ -20,6 +21,6 @@ public class Sistema {
                 return envio;
             }
         }
-        return null;
+        throw new NoSuchElementException("No existe un envio con id " + id + "."); // antes devolvia null
     }
 }

@@ -10,12 +10,16 @@ public class Sucursal {
         this.ciudad = ciudad;
     }
 
-    public boolean recibirEnvio(Envio envio) {
-        return envio.recibir(this);
+    public void recibirEnvio(Envio envio) { // void: si algo falla, la excepcion sube sola hasta App
+        envio.recibir(this);
     }
 
-    public boolean despacharEnvio(Envio envio) {
-        return envio.despachar(this);
+    public void despacharEnvio(Envio envio) {
+        envio.despachar(this);
+    }
+
+    public void entregarEnvio(Envio envio) { // accion nueva
+        envio.entregar(this);
     }
 
     public String toString() {
